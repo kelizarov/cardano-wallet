@@ -2299,8 +2299,9 @@ balanceTransaction ctx genChange (ApiT wid) body = do
             genChange
             (pp, nodePParams)
             ti
-            (utxo, Nothing)
+            (utxo, utxo)
             (wallet, pendingTxs)
+            mempty
             partialTx
         return $ ApiSerialisedTransaction { transaction }
   where

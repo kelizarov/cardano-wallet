@@ -2284,8 +2284,9 @@ balanceTransaction' utxo wallet pendingTxs seed tx  =
             (delegationAddress @'Mainnet)
             mockProtocolParametersForBalancing
             dummyTimeInterpreter
-            (utxo, Nothing)
+            (utxo, utxo)
             (wallet, pendingTxs)
+            mempty
             tx
 
 -- | Tests that 'ErrAssignRedeemersUnresolvedTxIns' can in fact be returned by
@@ -2520,7 +2521,7 @@ balanceTransactionGoldenSpec = describe "balance goldens" $ do
     txMinFee :: SealedTx -> Cardano.Lovelace
     txMinFee = toCardanoLovelace
         . fromMaybe (error "evaluateMinimumFee returned nothing!")
-        . evaluateMinimumFee testTxLayer (snd mockProtocolParametersForBalancing)
+        . evaluateMinimumFee testTxLayer (snd mockProtocolParametersForBalancing) mempty
 
 -- TODO: I believe evaluateTransactionFee relies on estimating the number of
 -- witnesses required to determine the balance. We should also have a similar
@@ -2948,7 +2949,7 @@ estimateSignedTxSizeSpec =
                 let pparams = (snd mockProtocolParametersForBalancing)
                         { Cardano.protocolParamMinUTxOValue = Just 1_000_000
                         }
-                estimateSignedTxSize testTxLayer pparams tx
+                estimateSignedTxSize testTxLayer pparams mempty tx
                     `shouldBe`
                     Just (TxSize $ fromIntegral $ BS.length bs)
   where

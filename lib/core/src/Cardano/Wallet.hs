@@ -390,6 +390,8 @@ import Cardano.Wallet.Primitive.Types.Address
     ( Address (..), AddressState (..) )
 import Cardano.Wallet.Primitive.Types.Coin
     ( Coin (..) )
+import Cardano.Wallet.Primitive.Types.Credential
+    ( Credential )
 import Cardano.Wallet.Primitive.Types.Hash
     ( Hash (..) )
 import Cardano.Wallet.Primitive.Types.Redeemer
@@ -1493,8 +1495,9 @@ balanceTransaction
     -> ArgGenChange s
     -> (W.ProtocolParameters, Cardano.ProtocolParameters)
     -> TimeInterpreter (Either PastHorizonException)
-    -> (UTxOIndex WalletUTxO, Maybe (UTxOIndex WalletUTxO))
+    -> (UTxOIndex WalletUTxO, UTxOIndex WalletUTxO)
     -> (Wallet s, Set Tx)
+    -> Map TxIn Credential
     -> PartialTx
     -> ExceptT ErrBalanceTx m SealedTx
 balanceTransaction
@@ -1502,8 +1505,9 @@ balanceTransaction
     generateChange
     (pp, nodePParams)
     ti
-    (paymentUtxo, mCollateralUtxo)
+    (paymentUtxo, collateralUtxo)
     (wallet, pendingTxs)
+    credMap
     (PartialTx partialTx@(cardanoTx -> Cardano.InAnyCardanoEra _ (Cardano.Tx (Cardano.TxBody bod) _)) presetInputs redeemers)
     = do
     let (outputs, txWithdrawal, txMetadata, txAssetsToMint, txAssetsToBurn)
@@ -1520,8 +1524,7 @@ balanceTransaction
         let utxoAvailableForInputs = UTxOSelection.fromIndexPair
                 (paymentUtxo, externalSelectedUtxo)
 
-        let utxoAvailableForCollateral =
-                UTxOIndex.toMap (fromMaybe paymentUtxo mCollateralUtxo)
+        let utxoAvailableForCollateral = UTxOIndex.toMap collateralUtxo
 
         -- NOTE: It is not possible to know the script execution cost in
         -- advance because it actually depends on the final transaction. Inputs
@@ -1597,7 +1600,7 @@ balanceTransaction
         , feeUpdate = UseNewTxFee delta
         }
     let candidateMinFee = fromMaybe (Coin 0) $
-            evaluateMinimumFee tl nodePParams candidateTx
+            evaluateMinimumFee tl nodePParams credMap candidateTx
 
 
     -- Fee minimization... Ideally we should factor this out and test
@@ -1702,7 +1705,8 @@ balanceTransaction
                 sizeOfRedeemerCommon = 17
 
             txFeePadding = (<> extraMargin) $ fromMaybe (Coin 0) $ do
-                betterEstimate <- evaluateMinimumFee tl nodePParams sealedTx
+                betterEstimate <-
+                    evaluateMinimumFee tl nodePParams credMap sealedTx
                 betterEstimate `Coin.subtract` worseEstimate
         in
             txCtx { txFeePadding }
@@ -3399,7 +3403,9 @@ guardQuit WalletDelegation{active,next} wdrl rewards = do
   where
     anyone = const True
 
-utxoIndexFromInputs :: [(TxIn, TxOut, Maybe (Hash "Datum"))] -> UTxOIndex WalletUTxO
+utxoIndexFromInputs
+    :: [(TxIn, TxOut, Maybe (Hash "Datum"))]
+    -> UTxOIndex WalletUTxO
 utxoIndexFromInputs =
     UTxOIndex.fromSequence . fmap (\(i, TxOut a b, _) -> (WalletUTxO i a, b))
 
