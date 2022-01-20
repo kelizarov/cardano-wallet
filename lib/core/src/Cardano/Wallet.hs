@@ -162,6 +162,7 @@ module Cardano.Wallet
     , submitExternalTx
     , submitTx
     , balanceTransaction
+    , TxInputT
     , PartialTx (..)
     , LocalTxSubmissionConfig (..)
     , defaultLocalTxSubmissionConfig
@@ -375,6 +376,8 @@ import Cardano.Wallet.Primitive.Types.Address
     ( Address (..), AddressState (..) )
 import Cardano.Wallet.Primitive.Types.Coin
     ( Coin (..) )
+import Cardano.Wallet.Primitive.Types.Credential
+    ( Credential )
 import Cardano.Wallet.Primitive.Types.Hash
     ( Hash (..) )
 import Cardano.Wallet.Primitive.Types.Redeemer
@@ -498,6 +501,8 @@ import Data.List
     ( scanl' )
 import Data.List.NonEmpty
     ( NonEmpty (..) )
+import Data.Map.Strict
+    ( Map )
 import Data.Maybe
     ( fromMaybe, mapMaybe )
 import Data.Proxy
@@ -1387,6 +1392,8 @@ normalizeDelegationAddress s addr = do
                                   Transaction
 -------------------------------------------------------------------------------}
 
+type TxInputT = (TxIn, TxOut, Maybe (Hash "Datum"))
+
 -- | A 'PartialTx' is an an unbalanced 'SealedTx' along with the necessary
 -- information to balance it.
 --
@@ -1394,7 +1401,7 @@ normalizeDelegationAddress s addr = do
 -- the 'sealedTx'.
 data PartialTx = PartialTx
     { sealedTx :: SealedTx
-    , inputs :: [(TxIn, TxOut, Maybe (Hash "Datum"))]
+    , inputs :: [TxInputT]
     , redeemers :: [Redeemer]
     } deriving (Show, Generic, Eq)
 
@@ -1405,7 +1412,7 @@ instance Buildable PartialTx where
         , nameF "tx" (cardanoTxF (cardanoTx tx))
         ]
       where
-        inF :: (TxIn, TxOut, Maybe (Hash "Datum")) -> Builder
+        inF :: TxInputT -> Builder
         inF (i,o,d) = ""+|i|+" "+|o|+" "+|d|+""
 
         cardanoTxF :: Cardano.InAnyCardanoEra Cardano.Tx -> Builder
@@ -1422,8 +1429,9 @@ balanceTransaction
     -> ArgGenChange s
     -> (W.ProtocolParameters, Cardano.ProtocolParameters)
     -> TimeInterpreter (Either PastHorizonException)
-    -> (UTxOIndex, Maybe UTxOIndex)
+    -> (UTxOIndex, UTxOIndex)
     -> (Wallet s, Set Tx)
+    -> Map TxIn Credential
     -> PartialTx
     -> ExceptT ErrBalanceTx m SealedTx
 balanceTransaction
@@ -1431,8 +1439,9 @@ balanceTransaction
     generateChange
     (pp, nodePParams)
     ti
-    (availableUtxo, mCollateralUtxo)
+    (availableUtxo, collateralUtxo)
     (wallet, pendingTxs)
+    credMap
     (PartialTx partialTx@(cardanoTx -> Cardano.InAnyCardanoEra _ (Cardano.Tx (Cardano.TxBody bod) _)) presetInputs redeemers)
     = do
     let (outputs, txWithdrawal, txMetadata, txAssetsToMint, txAssetsToBurn)
@@ -1514,8 +1523,7 @@ balanceTransaction
         let utxoAvailableForInputs = UTxOSelection.fromIndexPair
                 (availableUtxo, externalSelectedUtxo)
 
-        let utxoAvailableForCollateral =
-                UTxOIndex.toUTxO (fromMaybe availableUtxo mCollateralUtxo)
+        let utxoAvailableForCollateral = UTxOIndex.toUTxO collateralUtxo
 
         -- NOTE: It is not possible to know the script execution cost in
         -- advance because it actually depends on the final transaction. Inputs
@@ -1590,7 +1598,7 @@ balanceTransaction
         , feeUpdate = UseNewTxFee delta
         }
     let candidateMinFee = fromMaybe (Coin 0) $
-            evaluateMinimumFee tl nodePParams candidateTx
+            evaluateMinimumFee tl nodePParams credMap candidateTx
 
 
     -- Fee minimization... Ideally we should factor this out and test
@@ -1681,7 +1689,8 @@ balanceTransaction
                 sizeOfRedeemerCommon = 17
 
             txFeePadding = (<> extraMargin) $ fromMaybe (Coin 0) $ do
-                betterEstimate <- evaluateMinimumFee tl nodePParams sealedTx
+                betterEstimate <-
+                    evaluateMinimumFee tl nodePParams credMap sealedTx
                 betterEstimate `Coin.subtract` worseEstimate
         in
             txCtx { txFeePadding }
@@ -3263,7 +3272,7 @@ guardQuit WalletDelegation{active,next} rewards = do
   where
     anyone = const True
 
-utxoIndexFromInputs :: [(TxIn, TxOut, Maybe (Hash "Datum"))] -> UTxOIndex
+utxoIndexFromInputs :: [TxInputT] -> UTxOIndex
 utxoIndexFromInputs = UTxOIndex.fromSequence . fmap (\(i, o, _) -> (i, o))
 
 {-------------------------------------------------------------------------------

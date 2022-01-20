@@ -2246,7 +2246,9 @@ prop_balanceTransactionUnresolvedInputs
                 (delegationAddress @'Mainnet)
                 mockProtocolParametersForBalancing
                 dummyTimeInterpreter
-                (utxo, wal, pending)
+                (utxo, utxo)
+                (wal, pending)
+                mempty
                 partialTx) (show . Pretty) $ \case
             Right _
                 -> cover 0 True "success" $ property True
@@ -2291,7 +2293,9 @@ prop_balanceTransactionBalanced (Wallet' utxo wal pending) (ShowBuildable partia
                 (delegationAddress @'Mainnet)
                 mockProtocolParametersForBalancing
                 dummyTimeInterpreter
-                (utxo, wal, pending)
+                (utxo, utxo)
+                (wal, pending)
+                mempty
                 partialTx) (show . Pretty) $ \case
             Right (sealedTx ) -> do
                 label "success"

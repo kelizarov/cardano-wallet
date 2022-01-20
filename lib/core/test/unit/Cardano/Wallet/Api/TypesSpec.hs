@@ -67,6 +67,7 @@ import Cardano.Wallet.Api.Types
     , ApiAnyCertificate (..)
     , ApiAsset (..)
     , ApiBalanceTransactionPostData (..)
+    , ApiFreeBalanceTransactionPostData (..)
     , ApiBase64
     , ApiBlockInfo (..)
     , ApiBlockReference (..)
@@ -526,6 +527,7 @@ spec = parallel $ do
             jsonRoundtripAndGolden $ Proxy @ApiSignTransactionPostData
             jsonRoundtripAndGolden $ Proxy @ApiSerialisedTransaction
             jsonRoundtripAndGolden $ Proxy @(ApiBalanceTransactionPostData ('Testnet 0))
+            jsonRoundtripAndGolden $ Proxy @(ApiFreeBalanceTransactionPostData ('Testnet 0))
             jsonRoundtripAndGolden $ Proxy @(ApiExternalInput ('Testnet 0))
             jsonRoundtripAndGolden $ Proxy @(PostTransactionOldData ('Testnet 0))
             jsonRoundtripAndGolden $ Proxy @(PostTransactionFeeOldData ('Testnet 0))
@@ -1099,6 +1101,18 @@ spec = parallel $ do
                     { transaction = transaction (x :: ApiBalanceTransactionPostData ('Testnet 0))
                     , inputs = inputs (x :: ApiBalanceTransactionPostData ('Testnet 0))
                     , redeemers = redeemers (x :: ApiBalanceTransactionPostData ('Testnet 0))
+                    }
+            in
+                x' === x .&&. show x' === show x
+        it "ApiFreeBalanceTransactionPostData" $ property $ \x ->
+            let
+                x' = ApiFreeBalanceTransactionPostData
+                    { transaction = transaction (x :: ApiFreeBalanceTransactionPostData ('Testnet 0))
+                    , presetInputs = presetInputs (x :: ApiFreeBalanceTransactionPostData ('Testnet 0))
+                    , availableInputs = availableInputs (x :: ApiFreeBalanceTransactionPostData ('Testnet 0))
+                    , collateralInputs = collateralInputs (x :: ApiFreeBalanceTransactionPostData ('Testnet 0))
+                    , redeemers = redeemers (x :: ApiFreeBalanceTransactionPostData ('Testnet 0))
+                    , changeAddress = changeAddress (x :: ApiFreeBalanceTransactionPostData ('Testnet 0))
                     }
             in
                 x' === x .&&. show x' === show x
@@ -2088,6 +2102,15 @@ instance Arbitrary (ApiBalanceTransactionPostData n) where
         <*> arbitrary
         <*> arbitrary
 
+instance Arbitrary (ApiFreeBalanceTransactionPostData n) where
+    arbitrary = ApiFreeBalanceTransactionPostData
+        <$> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+
 instance Arbitrary (ApiRedeemer n) where
     arbitrary = oneof
         [ ApiRedeemerSpending <$> arbitrary <*> arbitrary
@@ -2772,6 +2795,9 @@ instance Typeable n => ToSchema (ApiExternalInput n) where
 
 instance Typeable n => ToSchema (ApiBalanceTransactionPostData n) where
     declareNamedSchema _ = declareSchemaForDefinition "ApiBalanceTransactionPostData"
+
+instance Typeable n => ToSchema (ApiFreeBalanceTransactionPostData n) where
+    declareNamedSchema _ = declareSchemaForDefinition "ApiFreeBalanceTransactionPostData"
 
 instance Typeable n => ToSchema (PostMintBurnAssetData n) where
     declareNamedSchema _ = do

@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -52,6 +53,10 @@ import Cardano.Wallet.Primitive.Types
     ( WalletId (..), header )
 import Cardano.Wallet.Primitive.Types.Address
     ( Address (..) )
+import Cardano.Wallet.Primitive.Types.Credential
+    ( Credential, credentialFromAddress )
+import Cardano.Wallet.Primitive.Types.Tx
+    ( TxIn (..), TxOut (..) )
 import Cardano.Wallet.Registry
     ( HasWorkerCtx (..)
     , MkWorker (..)
@@ -72,7 +77,7 @@ import Data.Generics.Internal.VL.Lens
 import Data.Generics.Labels
     ()
 import Data.Maybe
-    ( fromJust )
+    ( fromJust, fromMaybe, mapMaybe )
 import Data.Word
     ( Word8 )
 import Servant.Server
@@ -83,6 +88,7 @@ import qualified Cardano.Wallet.Network as NW
 import qualified Cardano.Wallet.Primitive.Types.UTxO as UTxO
 import qualified Cardano.Wallet.Registry as Registry
 import qualified Data.ByteString as BS
+import qualified Data.Map.Strict as Map
 
 import Cardano.Wallet.Api.Server
     ( ErrCreateWallet (..)
@@ -96,7 +102,7 @@ import Cardano.Wallet.Api.Server
 data Stateless = Stateless
 instance GenChange Stateless where
     type ArgGenChange Stateless = Address
-    genChange address = (address,)
+    genChange addr = (addr,)
 
 -- TODO: Stop wallet from syncing?
 -- Since we don't really need to track anything...
@@ -111,14 +117,22 @@ freeBalanceTransaction
     -> Handler ApiSerialisedTransaction
 freeBalanceTransaction ctx body = do
     pp <- liftIO $ NW.currentProtocolParameters nl
+    -- TODO: This throws when still in the Byron era.
     nodePParams <- fromJust <$> liftIO (NW.currentNodeProtocolParameters nl)
-    let partialTx = W.PartialTx
+    let presetInputs = fromExternalInput <$> body ^. #presetInputs
+        availableInputs = fromExternalInput <$> body ^. #availableInputs
+        -- Don't default to `availableInputs` here, defer it to later steps for
+        -- better performance since the available inputs can be big.
+        mCollaterals = fmap fromExternalInput <$> body ^. #collateralInputs
+        partialTx = W.PartialTx
             (getApiT $ body ^. #transaction)
-            (fromExternalInput <$> body ^. #presetInputs)
+            presetInputs
             (fromApiRedeemer <$> body ^. #redeemers)
-        availableInputs = toUtxoIndex $ body ^. #availableInputs
-        collateralInputs = toUtxoIndex <$> body ^. #collateralInputs
         (ApiT changeAddress, _) = body ^. #changeAddress
+        credMap = Map.fromList . mapMaybe gatherCred $
+            presetInputs <> availableInputs <> fromMaybe mempty mCollaterals
+        availableUtxo = W.utxoIndexFromInputs availableInputs
+        collateralUtxo = maybe availableUtxo W.utxoIndexFromInputs mCollaterals
     withFreeWorkerCtx ctx changeAddress $ \wrk -> do
         ti <- liftIO $ snapshot $ timeInterpreter $ ctx ^. networkLayer
         liftHandler $ ApiSerialisedTransaction . ApiT <$>
@@ -127,10 +141,11 @@ freeBalanceTransaction ctx body = do
                 changeAddress
                 (pp, nodePParams)
                 ti
-                (availableInputs, collateralInputs)
+                (availableUtxo, collateralUtxo)
                 -- pendingTxs is only used for checking pending withdrawals,
                 -- so it's safe to use mempty here
                 (wallet, mempty)
+                credMap
                 partialTx
   where
     nl = ctx ^. networkLayer
@@ -141,16 +156,18 @@ freeBalanceTransaction ctx body = do
         , currentTip = header block0
         , getState = Stateless
         }
-    toUtxoIndex = W.utxoIndexFromInputs . fmap fromExternalInput
+
+    gatherCred :: W.TxInputT -> Maybe (TxIn, Credential)
+    gatherCred (i, TxOut {address}, _) = (i,) <$> credentialFromAddress address
 
 -- TODO: Make this a configurable parameter
-walletPoolSize :: Word8
-walletPoolSize = 16
+walletWorkerPoolSize :: Word8
+walletWorkerPoolSize = 16
 
 walletIdShardFromAddress :: Address -> WalletId
-walletIdShardFromAddress (Address a) =
-    let f i b = (i `shiftL` 8 + fromIntegral b) `mod` walletPoolSize
-     in WalletId . hash . BS.singleton $ BS.foldl' f 0 a
+walletIdShardFromAddress =
+    let f a b = (a `shiftL` 8 + fromIntegral b) `mod` walletWorkerPoolSize
+     in WalletId . hash . BS.singleton . BS.foldl' f 0 . unAddress
 
 -- TODO: Remove DB layer, since we don't actually use it
 withFreeWorkerCtx
@@ -165,7 +182,7 @@ withFreeWorkerCtx
     -> Address
     -> (WorkerCtx ctx -> m a)
     -> m a
-withFreeWorkerCtx ctx address action = do
+withFreeWorkerCtx ctx addr action = do
     worker <- Registry.lookup re wid >>= \case
          Nothing ->
             liftIO (Registry.register @_ @ctx re ctx wid workerConfig) >>= \case
@@ -177,7 +194,7 @@ withFreeWorkerCtx ctx address action = do
   where
     re = ctx ^. workerRegistry @s @k
     df = ctx ^. dbFactory @s @k
-    wid = walletIdShardFromAddress address
+    wid = walletIdShardFromAddress addr
     -- FIXME: ErrCheckWalletIntegrityNoSuchWallet will be raised on startup
     -- if not used with in-memory database. However it doesn't have any
     -- negative impact on the actual logic.

@@ -53,6 +53,7 @@ import Cardano.Wallet.Api.Types
     ( ApiAddressData
     , ApiAddressInspectData
     , ApiBalanceTransactionPostData
+    , ApiFreeBalanceTransactionPostData
     , ApiBytesT (..)
     , ApiConstructTransactionData
     , ApiMaintenanceActionPostData
@@ -1468,6 +1469,9 @@ instance Malformed (BodyParam (ApiBalanceTransactionPostData ('Testnet pm))) whe
               , "Error in $.transaction: Deserialisation failure while decoding Shelley Tx. CBOR failed with error: DeserialiseFailure 0 'expected list len or indef'"
               )
             ]
+
+instance Malformed (BodyParam (ApiFreeBalanceTransactionPostData ('Testnet pm))) where
+    malformed = []
 
 instance Malformed (BodyParam (ApiWalletMigrationPlanPostData ('Testnet pm))) where
     malformed = jsonValid ++ jsonInvalid
