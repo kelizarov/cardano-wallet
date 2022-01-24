@@ -2271,18 +2271,21 @@ shrinkTxBody (Cardano.ShelleyTxBody e bod scripts scriptData aux val) = tail
     shrinkUpdates (SJust _) = [SNothing]
 
 balanceTransaction'
-    :: (UTxOIndex WalletUTxO, Wallet (SeqState 'Mainnet ShelleyKey), Set Tx)
+    :: UTxOIndex WalletUTxO
+    -> Wallet (SeqState 'Mainnet ShelleyKey)
+    -> Set Tx
     -> StdGenSeed
     -> PartialTx
     -> Either ErrBalanceTx SealedTx
-balanceTransaction' wal seed tx  =
+balanceTransaction' utxo wallet pendingTxs seed tx  =
     flip evalRand (stdGenFromSeed seed) $ runExceptT $
         balanceTransaction @(Rand StdGen)
             (Ctx @(Rand StdGen) nullTracer testTxLayer)
             (delegationAddress @'Mainnet)
             mockProtocolParametersForBalancing
             dummyTimeInterpreter
-            wal
+            (utxo, Nothing)
+            (wallet, pendingTxs)
             tx
 
 -- | Tests that 'ErrAssignRedeemersUnresolvedTxIns' can in fact be returned by
@@ -2298,7 +2301,7 @@ prop_balanceTransactionUnresolvedInputs
     seed = checkCoverage $ withMaxSuccess 400 $
         forAll (dropResolvedInputs partialTx') $ \(partialTx, dropped) -> do
         not (null dropped) ==> do
-            let res = balanceTransaction' (utxo, wal, pending) seed partialTx
+            let res = balanceTransaction' utxo wal pending seed partialTx
             cover 1 (isUnresolvedTxInsErr res) "unknown txins" $
                 case res of
                     Right _
@@ -2388,10 +2391,7 @@ balanceTransactionGoldenSpec = describe "balance goldens" $ do
         mkGolden ptx c =
             let
                 Wallet' utxoIndex wal pending = mkTestWallet rootK (utxo [c])
-                res = balanceTransaction'
-                    (utxoIndex, wal, pending)
-                    testStdGenSeed
-                    ptx
+                res = balanceTransaction' utxoIndex wal pending testStdGenSeed ptx
             in
                 case res of
                     Right tx
@@ -2542,10 +2542,7 @@ prop_balanceTransactionBalanced (Wallet' utxo wal pending) (ShowBuildable partia
                 , toCardanoUTxO Cardano.ShelleyBasedEraAlonzo $ view #utxo wal
                 ]
         let originalBalance = txBalance (sealedTx partialTx) combinedUTxO
-        let res = balanceTransaction'
-                (utxo, wal, pending)
-                seed
-                partialTx
+        let res = balanceTransaction' utxo wal pending seed partialTx
         case res of
             Right sealedTx -> counterexample ("\nResult: " <> pretty sealedTx) $ do
                 label "success"

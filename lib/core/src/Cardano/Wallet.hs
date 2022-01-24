@@ -194,6 +194,7 @@ module Cardano.Wallet
     , throttle
     , guardHardIndex
     , withNoSuchWallet
+    , utxoIndexFromInputs
 
     -- * Logging
     , WalletWorkerLog (..)
@@ -1492,7 +1493,8 @@ balanceTransaction
     -> ArgGenChange s
     -> (W.ProtocolParameters, Cardano.ProtocolParameters)
     -> TimeInterpreter (Either PastHorizonException)
-    -> (UTxOIndex WalletUTxO, Wallet s, Set Tx)
+    -> (UTxOIndex WalletUTxO, Maybe (UTxOIndex WalletUTxO))
+    -> (Wallet s, Set Tx)
     -> PartialTx
     -> ExceptT ErrBalanceTx m SealedTx
 balanceTransaction
@@ -1500,8 +1502,9 @@ balanceTransaction
     generateChange
     (pp, nodePParams)
     ti
-    (internalUtxoAvailable, wallet, pendingTxs)
-    (PartialTx partialTx@(cardanoTx -> Cardano.InAnyCardanoEra _ (Cardano.Tx (Cardano.TxBody bod) _)) externalInputs redeemers)
+    (paymentUtxo, mCollateralUtxo)
+    (wallet, pendingTxs)
+    (PartialTx partialTx@(cardanoTx -> Cardano.InAnyCardanoEra _ (Cardano.Tx (Cardano.TxBody bod) _)) presetInputs redeemers)
     = do
     let (outputs, txWithdrawal, txMetadata, txAssetsToMint, txAssetsToBurn)
             = extractFromTx partialTx
@@ -1512,15 +1515,13 @@ balanceTransaction
     guardConflictingWithdrawalNetworks
 
     (delta, extraInputs, extraCollateral, extraOutputs) <- do
-        let externalSelectedUtxo = UTxOIndex.fromSequence $
-                map (\(i, TxOut a b,_datumHash) -> (WalletUTxO i a, b))
-                externalInputs
+        let externalSelectedUtxo = utxoIndexFromInputs presetInputs
 
         let utxoAvailableForInputs = UTxOSelection.fromIndexPair
-                (internalUtxoAvailable, externalSelectedUtxo)
+                (paymentUtxo, externalSelectedUtxo)
 
         let utxoAvailableForCollateral =
-                UTxOIndex.toMap internalUtxoAvailable
+                UTxOIndex.toMap (fromMaybe paymentUtxo mCollateralUtxo)
 
         -- NOTE: It is not possible to know the script execution cost in
         -- advance because it actually depends on the final transaction. Inputs
@@ -1628,11 +1629,11 @@ balanceTransaction
 
     txBalance :: SealedTx -> ExceptT ErrBalanceTx m Cardano.Value
     txBalance tx =
-        case evaluateTransactionBalance tl tx nodePParams utxo externalInputs of
+        case evaluateTransactionBalance tl tx nodePParams utxo presetInputs of
             Just x -> pure x
             Nothing -> throwE $ ErrBalanceTxUpdateError ErrByronTxNotSupported
       where
-        utxo = CS.toExternalUTxOMap $ UTxOIndex.toMap internalUtxoAvailable
+        utxo = CS.toExternalUTxOMap $ UTxOIndex.toMap paymentUtxo
 
     assembleTransaction
         :: TxUpdate
@@ -1645,7 +1646,7 @@ balanceTransaction
         resolveInput :: TxIn -> Maybe (TxOut, Maybe (Hash "Datum"))
         resolveInput i =
             (\(_,o,d) -> (o,d))
-                <$> L.find (\(i',_,_) -> i == i') externalInputs
+                <$> L.find (\(i',_,_) -> i == i') presetInputs
             <|>
             (\(_,o) -> (o, Nothing))
                 <$> L.find (\(i',_) -> i == i') (extraInputs update)
@@ -3397,6 +3398,10 @@ guardQuit WalletDelegation{active,next} wdrl rewards = do
             | otherwise          -> Left $ ErrNonNullRewards rewards
   where
     anyone = const True
+
+utxoIndexFromInputs :: [(TxIn, TxOut, Maybe (Hash "Datum"))] -> UTxOIndex WalletUTxO
+utxoIndexFromInputs =
+    UTxOIndex.fromSequence . fmap (\(i, TxOut a b, _) -> (WalletUTxO i a, b))
 
 {-------------------------------------------------------------------------------
                                     Logging

@@ -108,6 +108,9 @@ module Cardano.Wallet.Api.Link
     , putSettings
     , getSettings
 
+      -- * Free Api
+    , freeBalanceTransaction
+
       -- * Utils
 
     , getCurrentSMASHHealth
@@ -857,6 +860,21 @@ patchSharedWallet w cred =
             endpoint @Api.PatchSharedWalletInDelegation (wid &)
   where
     wid = w ^. typed @(ApiT WalletId)
+
+--
+-- Free Api
+--
+
+freeBalanceTransaction
+    :: forall style.
+        ( HasCallStack
+        , Discriminate style
+        )
+    => (Method, Text)
+freeBalanceTransaction = discriminate @style
+    (endpoint @(Api.FreeBalanceTransaction Net) id)
+    (notSupported "Byron")
+    (notSupported "Shared")
 
 --
 -- Internals
