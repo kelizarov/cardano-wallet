@@ -159,6 +159,7 @@ module Cardano.Wallet.Api.Types
     , ApiValidityBound
     , PostMintBurnAssetData(..)
     , ApiBalanceTransactionPostData (..)
+    , ApiFreeBalanceTransactionPostData (..)
     , ApiExternalInput (..)
     , ApiRedeemer (..)
     , ApiDecodedTransaction (..)
@@ -228,6 +229,7 @@ module Cardano.Wallet.Api.Types
     , PostMintBurnAssetDataT
     , ApiBalanceTransactionPostDataT
     , ApiDecodedTransactionT
+    , ApiFreeBalanceTransactionPostDataT
 
     -- * API Type Conversions
     , coinToQuantity
@@ -1018,6 +1020,17 @@ data ApiBalanceTransactionPostData (n :: NetworkDiscriminant) = ApiBalanceTransa
     , inputs :: ![ApiExternalInput n]
     , redeemers :: ![ApiRedeemer n]
     } deriving (Eq, Generic, Show)
+
+-- TODO: availableInputs & collateralInputs should use different type.
+-- TODO: Technically, changeAddress can be an array.
+data ApiFreeBalanceTransactionPostData (n :: NetworkDiscriminant) = ApiFreeBalanceTransactionPostData
+    { transaction :: !(ApiT SealedTx)
+    , presetInputs :: ![ApiExternalInput n]
+    , availableInputs :: ![ApiExternalInput n]
+    , collateralInputs :: !(Maybe [ApiExternalInput n])
+    , redeemers :: ![ApiRedeemer n]
+    , changeAddress :: !(ApiT Address, Proxy n)
+    } deriving (Eq, Generic, Show, Typeable)
 
 type ApiRedeemerData = ApiBytesT 'Base16 ByteString
 
@@ -2872,6 +2885,15 @@ instance (EncodeStakeAddress n, EncodeAddress n)
   where
     toJSON = genericToJSON defaultRecordTypeOptions
 
+instance (DecodeStakeAddress n, DecodeAddress n)
+    => FromJSON (ApiFreeBalanceTransactionPostData n)
+  where
+    parseJSON = genericParseJSON defaultRecordTypeOptions
+instance (EncodeStakeAddress n, EncodeAddress n)
+    => ToJSON (ApiFreeBalanceTransactionPostData n)
+  where
+    toJSON = genericToJSON defaultRecordTypeOptions
+
 instance ToJSON ApiValidityBound where
     toJSON ApiValidityBoundUnspecified = Aeson.Null
     toJSON (ApiValidityBoundAsTimeFromNow from) = toJSON from
@@ -3826,6 +3848,7 @@ type family ApiWalletMigrationPostDataT (n :: k1) (s :: k2) :: Type
 type family ApiPutAddressesDataT (n :: k) :: Type
 type family ApiBalanceTransactionPostDataT (n :: k) :: Type
 type family ApiDecodedTransactionT (n :: k) :: Type
+type family ApiFreeBalanceTransactionPostDataT (n :: k) :: Type
 
 type instance ApiAddressT (n :: NetworkDiscriminant) =
     ApiAddress n
@@ -3876,6 +3899,9 @@ type instance ApiBalanceTransactionPostDataT (n :: NetworkDiscriminant) =
 
 type instance ApiDecodedTransactionT (n :: NetworkDiscriminant) =
     ApiDecodedTransaction n
+
+type instance ApiFreeBalanceTransactionPostDataT (n :: NetworkDiscriminant) =
+    ApiFreeBalanceTransactionPostData n
 
 {-------------------------------------------------------------------------------
                          SMASH interfacing types
@@ -4004,7 +4030,7 @@ instance FromJSON ApiBurnData where
     parseJSON = genericParseJSON defaultRecordTypeOptions
 
 instance ToJSON ApiBurnData where
-    toJSON (burn) = genericToJSON defaultRecordTypeOptions burn
+    toJSON = genericToJSON defaultRecordTypeOptions
 
 instance EncodeAddress n => ToJSON (ApiMintBurnOperation n) where
     toJSON = object . pure . \case

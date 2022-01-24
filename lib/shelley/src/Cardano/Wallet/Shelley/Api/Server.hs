@@ -46,6 +46,7 @@ import Cardano.Wallet.Api
     , ByronTransactions
     , ByronWallets
     , CoinSelections
+    , FreeApi
     , Network
     , Proxy_
     , SMASH
@@ -123,6 +124,8 @@ import Cardano.Wallet.Api.Server
     , withLegacyLayer
     , withLegacyLayer'
     )
+import Cardano.Wallet.Api.Server.Free
+    ( freeBalanceTransaction )
 import Cardano.Wallet.Api.Types
     ( AnyAddress (..)
     , AnyAddressType (..)
@@ -251,6 +254,7 @@ server byron icarus shelley multisig spl ntp =
     :<|> sharedWallets multisig
     :<|> sharedWalletKeys multisig
     :<|> sharedAddresses multisig
+    :<|> freeApi
   where
     wallets :: Server Wallets
     wallets = deleteWallet shelley
@@ -568,6 +572,9 @@ server byron icarus shelley multisig spl ntp =
         -> Server (SharedAddresses n)
     sharedAddresses apilayer =
              listAddresses apilayer normalizeSharedAddress
+
+    freeApi :: Server (FreeApi n)
+    freeApi = freeBalanceTransaction shelley
 
 postAnyAddress
     :: NetworkId

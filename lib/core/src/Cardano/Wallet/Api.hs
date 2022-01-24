@@ -148,6 +148,9 @@ module Cardano.Wallet.Api
     , Proxy_
         , PostExternalTransaction
 
+    , FreeApi
+        , FreeBalanceTransaction
+
       -- * Api Layer
     , ApiLayer (..)
     , HasWorkerRegistry
@@ -181,6 +184,7 @@ import Cardano.Wallet.Api.Types
     , ApiConstructTransactionT
     , ApiDecodedTransactionT
     , ApiFee
+    , ApiFreeBalanceTransactionPostDataT
     , ApiHealthCheck
     , ApiMaintenanceAction
     , ApiMaintenanceActionPostData
@@ -324,6 +328,7 @@ type Api n apiPool =
     :<|> SharedWallets
     :<|> SharedWalletKeys
     :<|> SharedAddresses n
+    :<|> FreeApi n
 
 {-------------------------------------------------------------------------------
                                   Wallets
@@ -1093,6 +1098,18 @@ type PostExternalTransaction = "proxy"
     :> "transactions"
     :> ReqBody '[OctetStream] (ApiT SealedTx)
     :> PostAccepted '[JSON] ApiTxId
+
+{-------------------------------------------------------------------------------
+                                Free Api
+-------------------------------------------------------------------------------}
+
+type FreeApi n =
+    FreeBalanceTransaction n
+
+type FreeBalanceTransaction n = "free"
+    :> "balance"
+    :> ReqBody '[JSON] (ApiFreeBalanceTransactionPostDataT n)
+    :> Post '[JSON] ApiSerialisedTransaction
 
 {-------------------------------------------------------------------------------
                                Api Layer

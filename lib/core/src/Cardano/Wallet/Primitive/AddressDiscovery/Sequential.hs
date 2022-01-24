@@ -21,7 +21,7 @@
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
--- We intentionally specify the constraint  (k == SharedKey) ~ 'False  
+-- We intentionally specify the constraint  (k == SharedKey) ~ 'False
 -- in some exports.
 
 -- |
@@ -609,7 +609,7 @@ instance
     -- See also: 'nextChangeIndex'
     type ArgGenChange (SeqState n k) =
         (k 'AddressK XPub -> k 'AddressK XPub -> Address)
-    
+
     genChange mkAddress st =
         (addr, st{ pendingChangeIxs = pending' })
       where
@@ -626,7 +626,7 @@ instance
     isOwned st (rootPrv, pwd) addrRaw =
         case paymentKeyFingerprint addrRaw of
             Left _ -> Nothing
-            Right addr -> 
+            Right addr ->
                 let
                     xPrv1 = lookupAndDeriveXPrv addr (internalPool st)
                     xPrv2 = lookupAndDeriveXPrv addr (externalPool st)
@@ -644,7 +644,7 @@ instance
             -> Maybe (k 'AddressK XPrv)
         lookupAndDeriveXPrv addr (SeqAddressPool pool) =
                 deriveAddressPrivateKey pwd accountPrv (role @c)
-            <$> AddressPool.lookup addr pool 
+            <$> AddressPool.lookup addr pool
 
 instance SupportsDiscovery n k => CompareDiscovery (SeqState n k) where
     compareDiscovery (SeqState !s1 !s2 _ _ _ _) a1 a2 =

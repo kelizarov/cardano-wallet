@@ -115,6 +115,11 @@ module Cardano.Wallet.Api.Server
 
     -- * Logging
     , WalletEngineLog (..)
+
+    -- * For Free Api
+    , fromExternalInput
+    , fromApiRedeemer
+    , ErrCreateWallet(..)
     ) where
 
 import Prelude
@@ -2217,14 +2222,16 @@ balanceTransaction ctx genChange (ApiT wid) body = do
             (fromExternalInput <$> body ^. #inputs)
             (fromApiRedeemer <$> body ^. #redeemers)
     withWorkerCtx ctx wid liftE liftE $ \wrk -> do
-        wallet <- liftHandler $ W.readWalletUTxOIndex @_ @s @k wrk wid
+        (utxo, wallet, pendingTxs) <-
+            liftHandler $ W.readWalletUTxOIndex @_ @s @k wrk wid
         ti <- liftIO $ snapshot $ timeInterpreter $ ctx ^. networkLayer
         transaction <- liftHandler $ ApiT <$> W.balanceTransaction @IO @s @k
             wrk
             genChange
             (pp, nodePParams)
             ti
-            wallet
+            (utxo, Nothing)
+            (wallet, pendingTxs)
             partialTx
         return $ ApiSerialisedTransaction { transaction }
   where

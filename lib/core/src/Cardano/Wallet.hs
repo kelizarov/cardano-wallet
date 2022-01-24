@@ -193,6 +193,7 @@ module Cardano.Wallet
     , throttle
     , guardHardIndex
     , withNoSuchWallet
+    , utxoIndexFromInputs
 
     -- * Logging
     , WalletWorkerLog (..)
@@ -1421,7 +1422,8 @@ balanceTransaction
     -> ArgGenChange s
     -> (W.ProtocolParameters, Cardano.ProtocolParameters)
     -> TimeInterpreter (Either PastHorizonException)
-    -> (UTxOIndex, Wallet s, Set Tx)
+    -> (UTxOIndex, Maybe UTxOIndex)
+    -> (Wallet s, Set Tx)
     -> PartialTx
     -> ExceptT ErrBalanceTx m SealedTx
 balanceTransaction
@@ -1429,8 +1431,9 @@ balanceTransaction
     generateChange
     (pp, nodePParams)
     ti
-    (internalUtxoAvailable, wallet, pendingTxs)
-    (PartialTx partialTx@(cardanoTx -> Cardano.InAnyCardanoEra _ (Cardano.Tx (Cardano.TxBody bod) _)) externalInputs redeemers)
+    (availableUtxo, mCollateralUtxo)
+    (wallet, pendingTxs)
+    (PartialTx partialTx@(cardanoTx -> Cardano.InAnyCardanoEra _ (Cardano.Tx (Cardano.TxBody bod) _)) presetInputs redeemers)
     = do
     let (outputs, txWithdrawal, txMetadata, txAssetsToMint, txAssetsToBurn)
             = extractFromTx partialTx
@@ -1506,14 +1509,13 @@ balanceTransaction
         throwE $ ErrBalanceTxNotYetSupported ZeroAdaOutput
 
     (delta, extraInputs, extraCollateral, extraOutputs) <- do
-        let externalSelectedUtxo = UTxOIndex.fromSequence $
-                map (\(i,o,_datumHash) -> (i, o)) externalInputs
+        let externalSelectedUtxo = utxoIndexFromInputs presetInputs
 
         let utxoAvailableForInputs = UTxOSelection.fromIndexPair
-                (internalUtxoAvailable, externalSelectedUtxo)
+                (availableUtxo, externalSelectedUtxo)
 
         let utxoAvailableForCollateral =
-                UTxOIndex.toUTxO internalUtxoAvailable
+                UTxOIndex.toUTxO (fromMaybe availableUtxo mCollateralUtxo)
 
         -- NOTE: It is not possible to know the script execution cost in
         -- advance because it actually depends on the final transaction. Inputs
@@ -1623,7 +1625,7 @@ balanceTransaction
         resolveInput :: TxIn -> Maybe (TxOut, Maybe (Hash "Datum"))
         resolveInput i =
             (\(_,o,d) -> (o,d))
-                <$> L.find (\(i',_,_) -> i == i') externalInputs
+                <$> L.find (\(i',_,_) -> i == i') presetInputs
             <|>
             (\(_,o) -> (o, Nothing))
                 <$> L.find (\(i',_) -> i == i') (extraInputs update)
@@ -3260,6 +3262,9 @@ guardQuit WalletDelegation{active,next} rewards = do
         Left $ ErrNonNullRewards rewards
   where
     anyone = const True
+
+utxoIndexFromInputs :: [(TxIn, TxOut, Maybe (Hash "Datum"))] -> UTxOIndex
+utxoIndexFromInputs = UTxOIndex.fromSequence . fmap (\(i, o, _) -> (i, o))
 
 {-------------------------------------------------------------------------------
                                     Logging
