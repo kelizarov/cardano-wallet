@@ -52,6 +52,7 @@ module Cardano.CLI
     , stateDirOption
     , syncToleranceOption
     , tlsOption
+    , permissiveCorsPolicyOption
     , poolMetadataSourceOption
     , tokenMetadataSourceOption
     , metadataOption
@@ -1212,6 +1213,12 @@ paymentOption = optionT $ mempty
     <> help
         ("address to send to and amount to send separated by @" <>
         ", e.g. '<amount>@<address>'")
+
+-- | [--permissive-cors-policy]
+permissiveCorsPolicyOption :: Parser Bool
+permissiveCorsPolicyOption = flag False True $ mempty
+    <> long "permissive-cors-policy"
+    <> help "enable permissive CORS policy"
 
 -- | [--address-pool-gap=INT], default: 20
 poolGapOption :: Parser AddressPoolGap

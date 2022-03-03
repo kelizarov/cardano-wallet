@@ -342,6 +342,7 @@ specWithServer testDir (tr, tracers) = aroundAll withContext
                 (NodeSource conn vData)
                 gp
                 (SomeNetworkDiscriminant $ Proxy @'Mainnet)
+                False
                 tracers
                 (SyncTolerance 10)
                 (Just db)
