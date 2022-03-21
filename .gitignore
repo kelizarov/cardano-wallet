@@ -48,3 +48,5 @@ lib/shelley/test/data/balanceTx/**/actual
 
 ### Docs build
 /_build/
+
+.DS_Store
