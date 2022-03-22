@@ -67,15 +67,16 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://github.com/input-output-hk/cardano-addresses
-    tag: 71006f9eb956b0004022e80aadd4ad50d837b621
+    location: https://github.com/MELD-labs/cardano-addresses
+    tag: fcf654cab181109a5c248dd17e07f2cf97c447a3
     subdir: command-line
             core
 
+-- Follow 
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/cardano-base
-    tag: 41545ba3ac6b3095966316a99883d678b5ab8da8
+    tag: 1587462ac8b2e50af2691f5ad93d3c2aa4674ed1
     subdir: base-deriving-via
             binary
             binary/test
@@ -100,9 +101,10 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/cardano-ledger
-    tag: 1a9ec4ae9e0b09d54e49b2a40c4ead37edadcce5
+    tag: 7f3339e1f98946cc6189c4e4f3c6b3884cbefc1a
     subdir: eras/alonzo/impl
             eras/alonzo/test-suite
+            eras/babbage/impl
             eras/byron/chain/executable-spec
             eras/byron/crypto
             eras/byron/crypto/test
@@ -123,10 +125,11 @@ source-repository-package
             libs/small-steps
             libs/small-steps-test
 
+-- Follow this PR: https://github.com/input-output-hk/cardano-node/pull/3700
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/cardano-node
-    tag: 73f9a746362695dc2cb63ba757fbcabb81733d23
+    tag: 52ad7337b84349b73c645ab679138ad8d42ac801
     subdir: cardano-api
             cardano-cli
             cardano-git-rev
@@ -144,8 +147,8 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://github.com/input-output-hk/cardano-sl-x509
-    tag: 12925934c533b3a6e009b61ede555f8f26bac037
+    location: https://github.com/MELD-labs/cardano-sl-x509
+    tag: 819997049b9cc675b28059d3d6f511d08f934d10
 
 source-repository-package
     type: git
@@ -169,10 +172,11 @@ source-repository-package
     location: https://github.com/input-output-hk/hedgehog-extras
     tag: edf6945007177a638fbeb8802397f3a6f4e47c14
 
+-- Follow this PR: https://github.com/input-output-hk/iohk-monitoring-framework/pull/627
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/iohk-monitoring-framework
-    tag: 808724ff8a19a33d0ed06f9ef59fbd900b08553c
+    tag: 23bb1280b0a82fb18224aa1e5ccbc4207020ccbf
     subdir: contra-tracer
             iohk-monitoring
             plugins/backend-aggregation
@@ -188,10 +192,13 @@ source-repository-package
     location: https://github.com/input-output-hk/optparse-applicative
     tag: 7497a29cb998721a9068d5725d49461f2bba0e7a
 
+-- This fork is for update `semialign` version to fit with aeson v2, while newest commit of ouroboros
+-- failed because of this bug: https://github.com/input-output-hk/cardano-wallet/issues/3146 which is 
+-- caused by this: https://github.com/input-output-hk/ouroboros-network/commit/b0568fd08d54509cc8007c83baf89e74a771a4a4
 source-repository-package
     type: git
-    location: https://github.com/input-output-hk/ouroboros-network
-    tag: 4fac197b6f0d2ff60dc3486c593b68dc00969fbf
+    location: https://github.com/MELD-labs/ouroboros-network
+    tag: eb7c6051f608c5cfddbb4171d0f331d2892c78f2
     subdir: cardano-client
             io-classes
             io-sim
@@ -217,10 +224,11 @@ source-repository-package
             typed-protocols-cborg
             typed-protocols-examples
 
+-- Follow cardano-ledger
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/plutus
-    tag: fc5fe94d3d9525d032bcbc79ff0e1ebcfd8ef143
+    tag: ccf5bcb99ffe054dc8cd5626723f64e02708dbae
     subdir: plutus-core
             plutus-ledger-api
             plutus-tx
@@ -239,6 +247,32 @@ source-repository-package
     location: https://github.com/shmish111/servant-purescript.git
     tag: a76104490499aa72d40c2790d10e9383e0dbde63
 
+-- The origin ekg lib is forcing aeson >= 0.4 && < 1.6. Also have to use this PR of ekg-json: https://github.com/tibbe/ekg-json/pull/12
+source-repository-package
+    type: git
+    location: git@github.com:kk-anlm/ekg.git
+    tag: d13ab19a262d8945298c32477bd878c991d9bad9
+
+source-repository-package
+  type: git
+  location: https://github.com/vshabanov/ekg-json
+  tag: 00ebe7211c981686e65730b7144fbf5350462608
+
+source-repository-package
+    type: git
+    location: git@github.com:kk-anlm/blockfrost-haskell.git
+    tag: 84d56cb21f2162006c03ed7d5bd7a7f14556ff61
+    subdir: blockfrost-api
+            blockfrost-client-core
+            blockfrost-client
+            blockfrost-pretty
+
+-- The newest commit allow attoparsec 0.14
+source-repository-package
+    type: git
+    location: https://github.com/snapframework/snap-server.git
+    tag: b9e82bbdd28768c2b8292e5aac5b6561a3edf975
+
 -- -------------------------------------------------------------------------
 -- Constraints tweaking
 
@@ -254,7 +288,8 @@ allow-newer:
   , size-based:template-haskell
 
 constraints:
-    hedgehog ^>= 1.0.2
+    aeson >= 2
+  , hedgehog ^>= 1.0.2
   , hashable < 1.4
   , bimap >= 0.4.0
   , libsystemd-journal >= 1.4.4
