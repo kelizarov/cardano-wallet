@@ -115,7 +115,7 @@ import Cardano.Api.Shelley
     , StakePoolRelay (..)
     )
 import Cardano.Ledger.Credential
-    ( Ix, Ptr (..) )
+    ( Ptr (..) )
 import Cardano.Ledger.SafeHash
     ( unsafeMakeSafeHash )
 import Cardano.Ledger.Shelley.API
@@ -182,7 +182,7 @@ import qualified Cardano.Binary as CBOR
 import qualified Cardano.Crypto.Hash as Crypto
 import qualified Cardano.Crypto.Seed as Crypto
 import qualified Cardano.Ledger.BaseTypes as Ledger
-    ( Port, dnsToText )
+    ( CertIx(..), Port, TxIx(..), dnsToText )
 import qualified Cardano.Ledger.Shelley.API as Ledger
     ( StakePoolRelay (..), portToWord16 )
 import qualified Cardano.Ledger.Shelley.TxBody as Ledger
@@ -198,6 +198,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Plutus.V1.Ledger.Api as Plutus
+import qualified PlutusCore as PC
 import qualified Test.Cardano.Ledger.Shelley.Serialisation.Generators.Genesis as Ledger
     ( genStakePoolRelay )
 
@@ -701,11 +702,13 @@ genTxMetadataValue =
                 ((,) <$> genTxMetadataValue <*> genTxMetadataValue)
 
 genPtr :: Gen Ptr
-genPtr = Ptr <$> genSlotNo <*> genIx <*> genIx
+genPtr = Ptr <$> genSlotNo <*> (Ledger.TxIx <$> genIx) <*> (Ledger.CertIx <$> genIx)
+
+type Ix = Word16
 
 genIx :: Gen Ix
 genIx = do
-    (Large (n :: Word64)) <- arbitrary
+    (Large (n :: Word16)) <- arbitrary
     pure n
 
 genStakeAddressReference :: Gen StakeAddressReference
@@ -827,7 +830,7 @@ genEpochNo :: Gen EpochNo
 genEpochNo = EpochNo <$> arbitrary
 
 genCostModel :: Gen CostModel
-genCostModel = case Plutus.defaultCostModelParams of
+genCostModel = case PC.defaultCostModelParams of
   Nothing -> error "Plutus defaultCostModelParams is broken."
   Just dcm ->
       CostModel

@@ -177,6 +177,7 @@ import Network.URI.Static
 import UnliftIO.Exception
     ( SomeException, handle, handleAny )
 
+import qualified Data.Aeson.Key as Aeson
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as BL
@@ -559,7 +560,7 @@ instance FromJSON SubjectProperties where
             Just p -> Just <$> parseJSON @(Property name) p
             Nothing -> pure Nothing
           where
-            propName = T.pack (symbolVal (Proxy @name))
+            propName = Aeson.fromText $ T.pack (symbolVal (Proxy @name))
 
 instance (HasValidator name, FromJSON (PropertyValue name)) => FromJSON (Property name) where
     parseJSON = withObject "Property value" $ \o -> Property
