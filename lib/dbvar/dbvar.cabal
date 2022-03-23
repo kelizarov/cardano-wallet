@@ -53,8 +53,6 @@ library
       Data.Table
       Database.Persist.Delta
       Database.Schema
-  other-modules:
-      Demo.Database
 
 test-suite unit
   default-language:
