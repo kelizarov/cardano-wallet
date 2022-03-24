@@ -172,7 +172,7 @@ import Data.Text
 import Data.Text.Class
     ( ToText (..), fromText )
 import Data.Word
-    ( Word32 )
+    ( Word16, Word32 )
 import Database.Persist.Class
     ( toPersistValue )
 import Database.Persist.Sql
@@ -1349,7 +1349,7 @@ selectTxs = fmap concatUnzip . mapM select . chunksOf chunkSize
 
     toOutputMap
         :: [(TxOut, [TxOutToken])]
-        -> Map (TxId, Word32) (TxOut, [TxOutToken])
+        -> Map (TxId, Word16) (TxOut, [TxOutToken])
     toOutputMap = Map.fromList . fmap toEntry
       where
         toEntry (out, tokens) = (key, (out, tokens))
@@ -1357,7 +1357,7 @@ selectTxs = fmap concatUnzip . mapM select . chunksOf chunkSize
             key = (txOutputTxId out, txOutputIndex out)
 
     resolveInputWith
-        :: [TxIn] -> Map (TxId, Word32) txOut -> [(TxIn, Maybe txOut)]
+        :: [TxIn] -> Map (TxId, Word16) txOut -> [(TxIn, Maybe txOut)]
     resolveInputWith inputs resolvedInputs =
         [ (i, Map.lookup key resolvedInputs)
         | i <- inputs
@@ -1366,7 +1366,7 @@ selectTxs = fmap concatUnzip . mapM select . chunksOf chunkSize
 
     resolveCollateralWith
         :: [TxCollateral]
-        -> Map (TxId, Word32) txOut
+        -> Map (TxId, Word16) txOut
         -> [(TxCollateral, Maybe txOut)]
     resolveCollateralWith collateral resolvedCollateral =
         [ (i, Map.lookup key resolvedCollateral)

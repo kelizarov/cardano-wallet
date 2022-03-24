@@ -170,7 +170,7 @@ import Data.Time.Clock
 import Data.Type.Equality
     ( (:~:) (..), testEquality )
 import Data.Word
-    ( Word32, Word64 )
+    ( Word16, Word32, Word64 )
 import Fmt
     ( Buildable (..)
     , Builder
@@ -302,7 +302,7 @@ data TxIn = TxIn
     { inputId
         :: !(Hash "Tx")
     , inputIx
-        :: !Word32
+        :: !Word16
     } deriving (Read, Show, Generic, Eq, Ord)
 
 instance NFData TxIn

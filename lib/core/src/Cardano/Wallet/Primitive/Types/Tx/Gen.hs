@@ -72,7 +72,7 @@ import Data.Map.Strict
 import Data.Text.Class
     ( FromText (..) )
 import Data.Word
-    ( Word32 )
+    ( Word16, Word32 )
 import Generics.SOP
     ( NP (..) )
 import GHC.Generics
@@ -199,14 +199,14 @@ genTxHashLargeRange = Hash . B8.pack <$> replicateM 32 arbitrary
 -- Transaction indices generated according to the size parameter
 --------------------------------------------------------------------------------
 
-genTxIndex :: Gen Word32
+genTxIndex :: Gen Word16
 genTxIndex = sized $ \size -> elements $ take (max 1 size) txIndices
 
-shrinkTxIndex :: Word32 -> [Word32]
+shrinkTxIndex :: Word16 -> [Word16]
 shrinkTxIndex 0 = []
 shrinkTxIndex _ = [0]
 
-txIndices :: [Word32]
+txIndices :: [Word16]
 txIndices = [0 ..]
 
 --------------------------------------------------------------------------------

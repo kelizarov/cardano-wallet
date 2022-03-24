@@ -125,7 +125,7 @@ TxIn
     txInputTxId           TxId          sql=tx_id
     txInputOrder          Int           sql=order
     txInputSourceTxId     TxId          sql=source_tx_id
-    txInputSourceIndex    Word32        sql=source_index
+    txInputSourceIndex    Word16        sql=source_index
     txInputSourceAmount   W.Coin        sql=source_amount
 
     Primary txInputTxId txInputSourceTxId txInputSourceIndex
@@ -139,7 +139,7 @@ TxCollateral
     txCollateralTxId         TxId   sql=tx_id
     txCollateralOrder        Int    sql=order
     txCollateralSourceTxId   TxId   sql=source_tx_id
-    txCollateralSourceIndex  Word32 sql=source_index
+    txCollateralSourceIndex  Word16 sql=source_index
     txCollateralSourceAmount W.Coin sql=source_amount
 
     Primary txCollateralTxId txCollateralSourceTxId txCollateralSourceIndex
@@ -151,7 +151,7 @@ TxCollateral
 -- not the wallet. txOutputTxId is referred to by TxMeta
 TxOut
     txOutputTxId     TxId        sql=tx_id
-    txOutputIndex    Word32      sql=index
+    txOutputIndex    Word16      sql=index
     txOutputAddress  W.Address   sql=address
     txOutputAmount   W.Coin      sql=amount
 
@@ -165,7 +165,7 @@ TxOut
 --
 TxOutToken
     txOutTokenTxId      TxId              sql=tx_id
-    txOutTokenTxIndex   Word32            sql=tx_index
+    txOutTokenTxIndex   Word16            sql=tx_index
     txOutTokenPolicyId  W.TokenPolicyId   sql=token_policy_id
     txOutTokenName      W.TokenName       sql=token_name
     txOutTokenQuantity  W.TokenQuantity   sql=token_quantity
@@ -269,7 +269,7 @@ UTxO                                sql=utxo
 
     -- TxIn
     utxoInputId         TxId        sql=input_tx_id
-    utxoInputIndex      Word32      sql=input_index
+    utxoInputIndex      Word16      sql=input_index
 
     -- TxOut
     utxoOutputAddress   W.Address   sql=output_address
@@ -288,7 +288,7 @@ UTxOToken                               sql=utxo_token
     utxoTokenWalletId  W.WalletId       sql=wallet_id
     utxoTokenSlot      SlotNo           sql=slot
     utxoTokenTxId      TxId             sql=tx_id
-    utxoTokenTxIndex   Word32           sql=tx_index
+    utxoTokenTxIndex   Word16           sql=tx_index
     utxoTokenPolicyId  W.TokenPolicyId  sql=token_policy_id
     utxoTokenName      W.TokenName      sql=token_name
     utxoTokenQuantity  W.TokenQuantity  sql=token_quantity

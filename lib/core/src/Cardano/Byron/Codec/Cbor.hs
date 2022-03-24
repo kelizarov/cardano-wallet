@@ -262,7 +262,7 @@ decodeTxIn = do
     decodeTxIn' = do
         _ <- CBOR.decodeListLenCanonicalOf 2
         tx <- Hash <$> CBOR.decodeBytes
-        TxIn tx <$> CBOR.decodeWord32
+        TxIn tx <$> CBOR.decodeWord16
 
 {- HLINT ignore decodeTxOut "Use <$>" -}
 decodeTxOut :: CBOR.Decoder s TxOut
@@ -392,7 +392,7 @@ encodeTxIn (TxIn (Hash txid) ix) = mempty
     bytes = CBOR.toStrictByteString $ mempty
         <> CBOR.encodeListLen 2
         <> CBOR.encodeBytes txid
-        <> CBOR.encodeWord32 ix
+        <> CBOR.encodeWord16 ix
 
 encodeTxOut :: TxOut -> CBOR.Encoding
 encodeTxOut (TxOut (Address addr) tb) = mempty

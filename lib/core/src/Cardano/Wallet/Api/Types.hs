@@ -719,7 +719,7 @@ data ApiCoinSelectionOutput (n :: NetworkDiscriminant) = ApiCoinSelectionOutput
 data ApiCoinSelectionCollateral (n :: NetworkDiscriminant) =
     ApiCoinSelectionCollateral
         { id :: !(ApiT (Hash "Tx"))
-        , index :: !Word32
+        , index :: !Word16
         , address :: !(ApiT Address, Proxy n)
         , derivationPath :: NonEmpty (ApiT DerivationIndex)
         , amount :: !(Quantity "lovelace" Natural)
@@ -1010,7 +1010,7 @@ newtype ApiSerialisedTransaction = ApiSerialisedTransaction
 
 data ApiExternalInput (n :: NetworkDiscriminant) = ApiExternalInput
     { id :: !(ApiT (Hash "Tx"))
-    , index :: !Word32
+    , index :: !Word16
     , address :: !(ApiT Address, Proxy n)
     , amount :: !(Quantity "lovelace" Natural)
     , assets :: !(ApiT W.TokenMap)
@@ -1154,7 +1154,7 @@ data ApiTransaction (n :: NetworkDiscriminant) = ApiTransaction
 
 data ApiWalletInput (n :: NetworkDiscriminant) = ApiWalletInput
     { id :: !(ApiT (Hash "Tx"))
-    , index :: !Word32
+    , index :: !Word16
     , address :: !(ApiT Address, Proxy n)
     , derivationPath :: NonEmpty (ApiT DerivationIndex)
     , amount :: !(Quantity "lovelace" Natural)

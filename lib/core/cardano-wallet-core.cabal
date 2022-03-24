@@ -51,6 +51,7 @@ library
     , cardano-ledger-shelley
     , cardano-ledger-alonzo
     , cardano-slotting
+    , cardano-prelude
     , cborg
     , containers
     , contra-tracer
