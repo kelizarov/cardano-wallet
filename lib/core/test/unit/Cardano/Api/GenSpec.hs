@@ -88,7 +88,7 @@ import Cardano.Api.Shelley
 import Cardano.Chain.UTxO
     ( TxInWitness (..) )
 import Cardano.Ledger.Credential
-    ( Ix, Ptr (..) )
+    ( Ptr (..) )
 import Cardano.Ledger.Shelley.API
     ( MIRPot (..) )
 import Data.Char
@@ -123,12 +123,13 @@ import Test.QuickCheck
     , property
     )
 
+import qualified Cardano.Ledger.BaseTypes as CL
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
 import Data.List
     ( (\\) )
 import qualified Data.Map.Strict as Map
-import qualified Plutus.V1.Ledger.Api as Plutus
+import qualified PlutusCore as PC
 
 spec :: Spec
 spec =
@@ -1052,11 +1053,11 @@ genTxMetadataInEraCoverage era meta =
                 TxMetadataNone -> cover 10 True "no metadata" True
                 TxMetadataInEra _ _ -> cover 40 True "some metadata" True
 
-genIxCoverage :: Ix -> Property
-genIxCoverage = unsignedCoverage (maxBound @Word32) "ix"
+genIxCoverage :: Word16 -> Property
+genIxCoverage = unsignedCoverage (maxBound @Word16) "ix"
 
 genPtrCoverage :: Ptr -> Property
-genPtrCoverage (Ptr slotNo ix1 ix2) = checkCoverage $ conjoin
+genPtrCoverage (Ptr slotNo (CL.TxIx ix1) (CL.CertIx ix2)) = checkCoverage $ conjoin
     [ genSlotNoCoverage slotNo
     , genIxCoverage ix1
     , genIxCoverage ix2
@@ -1386,7 +1387,7 @@ instance Arbitrary EpochNo where
 
 genCostModelCoverage :: CostModel -> Property
 genCostModelCoverage (CostModel costModel) = checkCoverage $ conjoin
-    [ Map.size costModel == Map.size (fromJust Plutus.defaultCostModelParams)
+    [ Map.size costModel == Map.size (fromJust PC.defaultCostModelParams)
       & label "Generated cost model must have same size as default cost model"
       & counterexample "Generated cost model did not have same size as default cost model"
     , checkCoverage

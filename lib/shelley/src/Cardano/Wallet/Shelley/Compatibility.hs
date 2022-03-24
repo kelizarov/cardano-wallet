@@ -347,6 +347,7 @@ import qualified Cardano.Ledger.ShelleyMA as MA
 import qualified Cardano.Ledger.ShelleyMA.AuxiliaryData as MA
 import qualified Cardano.Ledger.ShelleyMA.TxBody as MA
 import qualified Cardano.Ledger.TxIn as TxIn
+import qualified Cardano.Protocol.TPraos.BHeader as SL
 import qualified Cardano.Wallet.Primitive.Types as W
 import qualified Cardano.Wallet.Primitive.Types.Address as W
 import qualified Cardano.Wallet.Primitive.Types.Coin as Coin
@@ -375,6 +376,8 @@ import qualified Data.Text.Encoding as T
 import qualified Ouroboros.Consensus.Shelley.Ledger as O
 import qualified Ouroboros.Network.Block as O
 import qualified Ouroboros.Network.Point as Point
+import qualified Plutus.V1.Ledger.Api as PV1
+import qualified Plutus.V2.Ledger.Api as PV2
 
 --------------------------------------------------------------------------------
 --
@@ -580,7 +583,7 @@ fromCardanoHash = W.Hash . fromShort . getOneEraHash
 
 fromPrevHash
     :: W.Hash "BlockHeader"
-    -> SLAPI.PrevHash sc
+    -> SL.PrevHash sc
     -> W.Hash "BlockHeader"
 fromPrevHash genesisHash = \case
     SL.GenesisHash -> genesisHash
@@ -926,15 +929,17 @@ fromLedgerAlonzoPParams
           Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV2
 
       fromAlonzoCostModel :: Alonzo.CostModel -> Cardano.CostModel
-      fromAlonzoCostModel (Alonzo.CostModel m) = Cardano.CostModel m
+      fromAlonzoCostModel (Alonzo.CostModelV1 m _) = Cardano.CostModel m
+      fromAlonzoCostModel (Alonzo.CostModelV2 m _) = Cardano.CostModel m
 
       fromAlonzoCostModels
-          :: Map Alonzo.Language Alonzo.CostModel
+          :: Alonzo.CostModels
           -> Map Cardano.AnyPlutusScriptVersion Cardano.CostModel
       fromAlonzoCostModels =
           Map.fromList
           . map (bimap fromAlonzoScriptLanguage fromAlonzoCostModel)
           . Map.toList
+          . Alonzo.unCostModels
 
 toAlonzoPParams
     :: Cardano.ProtocolParameters
@@ -1033,21 +1038,32 @@ toAlonzoPParams
 
     toAlonzoCostModels
       :: Map Cardano.AnyPlutusScriptVersion Cardano.CostModel
-      -> Map Alonzo.Language Alonzo.CostModel
+      -> Alonzo.CostModels
     toAlonzoCostModels
-        = Map.fromList
-        . map (bimap toAlonzoScriptLanguage toAlonzoCostModel)
+        = Alonzo.CostModels
+        . Map.fromList
+        . mapMaybe toAlonzoScriptLanguageAndCostModel
         . Map.toList
       where
-        toAlonzoCostModel :: Cardano.CostModel -> Alonzo.CostModel
-        toAlonzoCostModel (Cardano.CostModel m) =
-            Alonzo.CostModel m
+        toAlonzoScriptLanguageAndCostModel :: (Cardano.AnyPlutusScriptVersion, Cardano.CostModel) -> Maybe (Alonzo.Language, Alonzo.CostModel)
+        toAlonzoScriptLanguageAndCostModel (Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV1, Cardano.CostModel cm) =
+            case PV1.mkEvaluationContext cm of
+                Just evalCtx -> Just (Alonzo.PlutusV1, Alonzo.CostModelV1 cm evalCtx)
+                _ -> Nothing
+        toAlonzoScriptLanguageAndCostModel (Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV2, Cardano.CostModel cm) =
+            case PV2.mkEvaluationContext cm of
+                Just evalCtx -> Just (Alonzo.PlutusV2, Alonzo.CostModelV2 cm evalCtx)
+                _ -> Nothing
+        
+        -- toAlonzoCostModel :: Cardano.CostModel -> Alonzo.CostModel
+        -- toAlonzoCostModel (Cardano.CostModel m) =
+        --     Alonzo.CostModel m
 
-        toAlonzoScriptLanguage :: Cardano.AnyPlutusScriptVersion -> Alonzo.Language
-        toAlonzoScriptLanguage (Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV1) =
-            Alonzo.PlutusV1
-        toAlonzoScriptLanguage (Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV2) =
-            Alonzo.PlutusV2
+        -- toAlonzoScriptLanguage :: Cardano.AnyPlutusScriptVersion -> Alonzo.Language
+        -- toAlonzoScriptLanguage (Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV1) =
+        --     Alonzo.PlutusV1
+        -- toAlonzoScriptLanguage (Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV2) =
+        --     Alonzo.PlutusV2
 
     toAlonzoPrices :: Cardano.ExecutionUnitPrices -> Maybe Alonzo.Prices
     toAlonzoPrices Cardano.ExecutionUnitPrices
@@ -1085,10 +1101,10 @@ toAlonzoPParams Cardano.ProtocolParameters { protocolParamMaxCollateralInputs = 
     error "toAlonzoPParams: must specify protocolParamMaxCollateralInputs"
 
 toCostModelsAsArray
-    :: Map Alonzo.Language Alonzo.CostModel
+    :: Alonzo.CostModels
     -> Array Alonzo.Language Alonzo.CostModel
 toCostModelsAsArray costModels =
-    Array.array (minBound, maxBound) [ (k, v) | (k, v) <- Map.toList costModels ]
+    Array.array (minBound, maxBound) [ (k, v) | (k, v) <- Map.toList (Alonzo.unCostModels costModels) ]
 
 --------------------------------------------------------------------------------
 
@@ -1246,11 +1262,8 @@ fromShelleyTxId (SL.TxId h) =
 fromShelleyTxIn
     :: SL.TxIn crypto
     -> W.TxIn
-fromShelleyTxIn (SL.TxIn txid ix) =
-    W.TxIn (fromShelleyTxId txid) (unsafeCast ix)
-  where
-    unsafeCast :: Natural -> Word32
-    unsafeCast = fromIntegral
+fromShelleyTxIn (SL.TxIn txid (SL.TxIx ix)) =
+    W.TxIn (fromShelleyTxId txid) ix
 
 fromCardanoTxIn
     :: Cardano.TxIn
@@ -1703,7 +1716,7 @@ toCardanoTxIn (W.TxIn tid ix) =
 
 toTxIn :: SL.Crypto crypto => W.TxIn -> SL.TxIn crypto
 toTxIn (W.TxIn tid ix) =
-    SL.TxIn (toTxId tid) (fromIntegral ix)
+    SL.TxIn (toTxId tid) (SL.TxIx ix)
 
 toTxId :: Crypto.HashAlgorithm (SL.HASH crypto) => W.Hash "Tx" -> SL.TxId crypto
 toTxId (W.Hash h) =

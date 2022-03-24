@@ -51,6 +51,7 @@ library
     , cardano-ledger-shelley
     , cardano-ledger-shelley-ma
     , cardano-ledger-alonzo
+    , cardano-protocol-tpraos
     , cardano-slotting
     , cardano-wallet-cli
     , cardano-wallet-core
@@ -80,6 +81,7 @@ library
     , ouroboros-consensus-shelley
     , ouroboros-network
     , ouroboros-network-framework
+    , plutus-ledger-api
     , random
     , retry
     , serialise
@@ -132,6 +134,7 @@ executable cardano-wallet
     ghc-options: -O2 -Werror
   build-depends:
       base
+    , cardano-protocol-tpraos
     , cardano-wallet-cli
     , cardano-wallet-core
     , cardano-wallet-launcher
