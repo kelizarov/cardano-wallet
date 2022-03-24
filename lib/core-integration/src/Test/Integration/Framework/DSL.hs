@@ -461,6 +461,7 @@ import qualified Codec.CBOR.Encoding as CBOR
 import qualified Codec.CBOR.Write as CBOR
 import qualified Crypto.Scrypt as Scrypt
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Key as Aeson
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
@@ -2522,7 +2523,7 @@ toQueryString kvs = if T.null suffix then mempty else "?" <> suffix
 addField :: ToJSON a => Text -> a -> Payload -> Payload
 addField fieldName field = \case
     Json (Aeson.Object o) ->
-        Json (Aeson.Object (o <> (fieldName .= field)))
+        Json (Aeson.Object (o <> ((Aeson.fromText fieldName) .= field)))
     _ ->
         error "addField called on a non-json payload"
 
