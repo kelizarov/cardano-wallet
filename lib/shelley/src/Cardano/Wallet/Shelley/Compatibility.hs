@@ -929,8 +929,7 @@ fromLedgerAlonzoPParams
           Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV2
 
       fromAlonzoCostModel :: Alonzo.CostModel -> Cardano.CostModel
-      fromAlonzoCostModel (Alonzo.CostModelV1 m _) = Cardano.CostModel m
-      fromAlonzoCostModel (Alonzo.CostModelV2 m _) = Cardano.CostModel m
+      fromAlonzoCostModel = Cardano.CostModel . Alonzo.getCostModelParams
 
       fromAlonzoCostModels
           :: Alonzo.CostModels
@@ -1047,13 +1046,9 @@ toAlonzoPParams
       where
         toAlonzoScriptLanguageAndCostModel :: (Cardano.AnyPlutusScriptVersion, Cardano.CostModel) -> Maybe (Alonzo.Language, Alonzo.CostModel)
         toAlonzoScriptLanguageAndCostModel (Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV1, Cardano.CostModel cm) =
-            case PV1.mkEvaluationContext cm of
-                Just evalCtx -> Just (Alonzo.PlutusV1, Alonzo.CostModelV1 cm evalCtx)
-                _ -> Nothing
+            ((Alonzo.PlutusV1, ) <$>) . either (const Nothing) Just $ Alonzo.mkCostModel Alonzo.PlutusV1 cm
         toAlonzoScriptLanguageAndCostModel (Cardano.AnyPlutusScriptVersion Cardano.PlutusScriptV2, Cardano.CostModel cm) =
-            case PV2.mkEvaluationContext cm of
-                Just evalCtx -> Just (Alonzo.PlutusV2, Alonzo.CostModelV2 cm evalCtx)
-                _ -> Nothing
+            ((Alonzo.PlutusV2, ) <$>) . either (const Nothing) Just $ Alonzo.mkCostModel Alonzo.PlutusV2 cm
         
         -- toAlonzoCostModel :: Cardano.CostModel -> Alonzo.CostModel
         -- toAlonzoCostModel (Cardano.CostModel m) =

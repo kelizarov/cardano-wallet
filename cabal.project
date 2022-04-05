@@ -100,7 +100,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/cardano-ledger
-    tag: 7f3339e1f98946cc6189c4e4f3c6b3884cbefc1a
+    tag: d484397eff26fb19f92b80a7027f2b10561cb6cf
     subdir: eras/alonzo/impl
             eras/alonzo/test-suite
             eras/babbage/impl
@@ -128,7 +128,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/MELD-labs/cardano-node
-    tag: 4d8710d5648849d60cc6f279cdc8f6106811c477
+    tag: 2bf38c577ace57c99213a671d46db600479eeec2
     subdir: cardano-api
             cardano-cli
             cardano-git-rev
@@ -193,8 +193,8 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://github.com/input-output-hk/ouroboros-network
-    tag: 818845b9e53f5f24dd245e8b489541c26ad92586
+    location: git@github.com:MELD-labs/ouroboros-network.git
+    tag: edffbbd4f602d82ba8fb1316a58ca8b58540e09e
     subdir: cardano-client
             io-classes
             io-sim
