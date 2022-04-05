@@ -182,6 +182,9 @@ import qualified Cardano.Wallet.Api.Server as Server
 import qualified Cardano.Wallet.DB.Sqlite as Sqlite
 import qualified Network.Wai.Handler.Warp as Warp
 
+import Network.Wai.Middleware.Cors
+    ( CorsResourcePolicy (corsRequestHeaders, corsMethods), cors, simpleCorsResourcePolicy )
+
 -- | Encapsulate a network discriminant and the necessary constraints it should
 -- satisfy.
 data SomeNetworkDiscriminant where
@@ -215,6 +218,8 @@ serveWallet
     -- currently in use by the network that are relevant to the wallet.
     -> SomeNetworkDiscriminant
     -- ^ Proxy for the network discriminant
+    -> Bool
+    -- ^ Whether enable permissive CORS policy
     -> Tracers IO
     -- ^ Logging config.
     -> SyncTolerance
@@ -246,6 +251,7 @@ serveWallet
     , slottingParameters
     }
   (SomeNetworkDiscriminant proxyNetwork)
+  permissiveCorsPolicy
   Tracers{..}
   sTolerance
   databaseDir
@@ -348,7 +354,11 @@ serveWallet
         serverUrl <- getServerUrl tlsConfig socket
         let serverSettings = Warp.defaultSettings
                 & setBeforeMainLoop (beforeMainLoop serverUrl)
-        let application = Server.serve (Proxy @(ApiV2 n ApiStakePool)) $
+        let corsWithContentType = cors (const $ Just (simpleCorsResourcePolicy
+                    { corsRequestHeaders = ["Content-Type", "Accepts"]
+                    , corsMethods = ["GET", "POST", "PUT", "DELETE", "OPTION"]
+                    }))
+        let application = (if permissiveCorsPolicy then corsWithContentType else id) $ Server.serve (Proxy @(ApiV2 n ApiStakePool)) $
                 server byron icarus shelley multisig spl ntp
         Server.start serverSettings apiServerTracer tlsConfig socket application
 

@@ -54,6 +54,7 @@ import Cardano.CLI
     , loggingOptions
     , loggingSeverityOrOffReader
     , loggingTracers
+    , permissiveCorsPolicyOption
     , poolMetadataSourceOption
     , runCli
     , setupDirectory
@@ -178,7 +179,8 @@ beforeMainLoop tr = logInfo tr . MsgListenAddress
 
 -- | Arguments for the 'serve' command
 data ServeArgs = ServeArgs
-    { _hostPreference :: HostPreference
+    { _permissiveCorsPolicy :: Bool
+    , _hostPreference :: HostPreference
     , _mode :: Mode
     , _listen :: Listen
     , _tlsConfig :: Maybe TlsConfiguration
@@ -198,7 +200,8 @@ cmdServe = command "serve" $ info (helper <*> helper' <*> cmd) $
     helper' = helperTracing tracerDescriptions
 
     cmd = fmap exec $ ServeArgs
-        <$> hostPreferenceOption
+        <$> permissiveCorsPolicyOption
+        <*> hostPreferenceOption
         <*> modeOption
         <*> listenOption
         <*> optional tlsOption
@@ -212,6 +215,7 @@ cmdServe = command "serve" $ info (helper <*> helper' <*> cmd) $
 
     exec :: ServeArgs -> IO ()
     exec args@(ServeArgs
+      permissiveCorsPolicy
       host
       mode
       listen
@@ -245,6 +249,7 @@ cmdServe = command "serve" $ info (helper <*> helper' <*> cmd) $
                 blockchainSource
                 netParams
                 discriminant
+                permissiveCorsPolicy
                 tracers
                 sTolerance
                 databaseDir

@@ -96,6 +96,7 @@ library
     , unliftio-core
     , unordered-containers
     , vector
+    , wai-cors
     , warp
     , yaml
     , Win32-network

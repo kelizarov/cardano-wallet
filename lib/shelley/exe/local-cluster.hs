@@ -257,6 +257,7 @@ main = withLocalClusterSetup $ \dir clusterLogs walletLogs ->
                 (NodeSource socketPath vData)
                 gp
                 (SomeNetworkDiscriminant $ Proxy @'Mainnet)
+                False
                 tracers
                 (SyncTolerance 10)
                 (Just db)
