@@ -38,7 +38,7 @@
 --
 --------------------------------------------------------------------------------
 
-index-state: 2022-03-21T02:28:51Z
+index-state: 2022-04-08T02:28:51Z
 with-compiler: ghc-8.10.7
 
 packages:
@@ -100,7 +100,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/cardano-ledger
-    tag: d484397eff26fb19f92b80a7027f2b10561cb6cf
+    tag: cbb29cfab5487b22289c299753e996ca93408eb3
     subdir: eras/alonzo/impl
             eras/alonzo/test-suite
             eras/babbage/impl
@@ -193,8 +193,8 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: git@github.com:MELD-labs/ouroboros-network.git
-    tag: edffbbd4f602d82ba8fb1316a58ca8b58540e09e
+    location: https://github.com/input-output-hk/ouroboros-network.git
+    tag: 8b689a66e74ce3140d2114e6ee8ef6983470fb3f
     subdir: cardano-client
             io-classes
             io-sim
@@ -224,7 +224,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/plutus
-    tag: ccf5bcb99ffe054dc8cd5626723f64e02708dbae
+    tag: dbefda30be6490c758aa88b600f5874f12712b3a
     subdir: plutus-core
             plutus-ledger-api
             plutus-tx
@@ -243,12 +243,6 @@ source-repository-package
     location: https://github.com/shmish111/servant-purescript.git
     tag: a76104490499aa72d40c2790d10e9383e0dbde63
 
--- The origin ekg lib is forcing aeson >= 0.4 && < 1.6. Also have to use this PR of ekg-json: https://github.com/tibbe/ekg-json/pull/12
-source-repository-package
-    type: git
-    location: git@github.com:kk-anlm/ekg.git
-    tag: d13ab19a262d8945298c32477bd878c991d9bad9
-
 source-repository-package
   type: git
   location: https://github.com/vshabanov/ekg-json
@@ -256,8 +250,8 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: git@github.com:kk-anlm/blockfrost-haskell.git
-    tag: 84d56cb21f2162006c03ed7d5bd7a7f14556ff61
+    location: git@github.com:blockfrost/blockfrost-haskell.git
+    tag: d6c4fd24d0714e8937b9397030ba787008f23980
     subdir: blockfrost-api
             blockfrost-client-core
             blockfrost-client
@@ -282,6 +276,7 @@ allow-newer:
   , cardano-sl-x509:ip
   , cardano-addresses:aeson
   , size-based:template-haskell
+  , ekg:aeson
 
 constraints:
     aeson >= 2
