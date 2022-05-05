@@ -100,6 +100,7 @@
           (hsPkgs."unliftio-core" or (errorHandler.buildDepError "unliftio-core"))
           (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
           (hsPkgs."vector" or (errorHandler.buildDepError "vector"))
+          (hsPkgs."wai-cors" or (errorHandler.buildDepError "wai-cors"))
           (hsPkgs."warp" or (errorHandler.buildDepError "warp"))
           (hsPkgs."yaml" or (errorHandler.buildDepError "yaml"))
           (hsPkgs."Win32-network" or (errorHandler.buildDepError "Win32-network"))
@@ -337,4 +338,6 @@
           };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./lib/shelley; }
+    } // rec {
+    src = (pkgs.lib).mkDefault ./lib/shelley;
+    }

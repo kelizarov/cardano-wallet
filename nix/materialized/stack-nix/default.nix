@@ -52,6 +52,7 @@
         "hspec-golden" = (((hackage.hspec-golden)."0.2.0.0").revisions).default;
         "transformers-except" = (((hackage.transformers-except)."0.1.1").revisions).default;
         "Unique" = (((hackage.Unique)."0.4.7.6").revisions).default;
+        "wai-cors" = (((hackage.wai-cors)."0.2.7").revisions).default;
         "binary" = (((hackage.binary)."0.8.8.0").revisions).default;
         "parsec" = (((hackage.parsec)."3.1.14.0").revisions).default;
         dbvar = ./dbvar.nix;
