@@ -1,44 +1,45 @@
 --------------------------------------------------------------------------------
--- Cabal project file
--- -----------------------------------------------------------------------------
---
--- Example build command:
---
---   cabal build all --enable-tests --enable-benchmarks -O0
---
--- -----------------------------------------------------------------------------
--- Updating this file
---
--- Note that the canonical source of dependencies is stack.yaml and
--- cabal.project should be kept in sync with that. The Nix packages
--- are generated from stack.yaml not cabal.project.
---
--- -----------------------------------------------------------------------------
--- How to use with the nix-shell
---
--- The advantage of building under nix-shell is that the correct
--- versions of all build and test dependencies are set up for you in the
--- nix-shell environment.
---
--- All dependencies, including Haskell package dependencies, have been
--- built on Hydra and are transparently downloaded from the IOHK
--- cache.
---
--- The Haskell package set in shell.nix is automatically generated
--- from stack.yaml.
---
--- To build, start "nix-shell", then run Cabal inside:
---     nix develop
---     cabal build all -O0
---
--- To build with profiling enabled, use:
---    nix develop .#profiled
---    cabal configure --enable-tests --enable-benchmarks --enable-profiling
---    cabal build all
---
---------------------------------------------------------------------------------
+ -- Cabal project file
+ -- -----------------------------------------------------------------------------
+ --
+ -- Example build command:
+ --
+ --   cabal build all --enable-tests --enable-benchmarks -O0
+ --
+ -- -----------------------------------------------------------------------------
+ -- Updating this file
+ --
+ -- Note that the canonical source of dependencies is stack.yaml and
+ -- cabal.project should be kept in sync with that. The Nix packages
+ -- are generated from stack.yaml not cabal.project.
+ --
+ -- -----------------------------------------------------------------------------
+ -- How to use with the nix-shell
+ --
+ -- The advantage of building under nix-shell is that the correct
+ -- versions of all build and test dependencies are set up for you in the
+ -- nix-shell environment.
+ --
+ -- All dependencies, including Haskell package dependencies, have been
+ -- built on Hydra and are transparently downloaded from the IOHK
+ -- cache.
+ --
+ -- The Haskell package set in shell.nix is automatically generated
+ -- from stack.yaml.
+ --
+ -- To build, start "nix-shell", then run Cabal inside:
+ --     nix develop
+ --     cabal build all -O0
+ --
+ -- To build with profiling enabled, use:
+ --    nix develop .#profiled
+ --    cabal configure --enable-tests --enable-benchmarks --enable-profiling
+ --    cabal build all
+ --
+ --------------------------------------------------------------------------------
 
-index-state: 2022-03-21T02:28:51Z
+index-state: 2022-03-17T00:00:00Z
+
 with-compiler: ghc-8.10.7
 
 packages:
@@ -152,12 +153,10 @@ source-repository-package
     location: https://github.com/input-output-hk/ekg-forward
     tag: 297cd9db5074339a2fb2e5ae7d0780debb670c63
 
--- Drops an instance breaking cardano-node.
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/flat
     tag: ee59880f47ab835dbd73bea0847dab7869fc20d8
-    --sha256: 1lrzknw765pz2j97nvv9ip3l1mcpf2zr4n56hwlz0rk7wq7ls4cm
 
 source-repository-package
     type: git
@@ -182,7 +181,6 @@ source-repository-package
             plugins/scribe-systemd
             tracer-transformers
 
--- Using a fork until our patches can be merged upstream
 source-repository-package
     type: git
     location: https://github.com/input-output-hk/optparse-applicative
@@ -231,6 +229,11 @@ source-repository-package
 
 source-repository-package
     type: git
+    location: https://github.com/larskuhtz/wai-cors.git
+    tag: 7af2f8acff5ddd3557f86d1759c4f6a8ea0ad17b
+
+source-repository-package
+    type: git
     location: https://github.com/shmish111/purescript-bridge.git
     tag: 6a92d7853ea514be8b70bab5e72077bf5a510596
 
@@ -239,88 +242,35 @@ source-repository-package
     location: https://github.com/shmish111/servant-purescript.git
     tag: a76104490499aa72d40c2790d10e9383e0dbde63
 
--- -------------------------------------------------------------------------
--- Constraints tweaking
-
--- cardano-addresses unit tests bring in some version constraint conflicts.
---
--- 1. hjsonschema and hjsonpointer deps have overly strict bounds.
--- 2. it has strict aeson < 1.5 dep - this will be fixed in the next release.
-allow-newer:
-    hjsonschema:*
-  , hjsonpointer:*
-  , cardano-sl-x509:ip
-  , cardano-addresses:aeson
-  , size-based:template-haskell
-
-constraints:
-    hedgehog ^>= 1.0.2
-  , hashable < 1.4
-  , bimap >= 0.4.0
-  , libsystemd-journal >= 1.4.4
-  , systemd >= 2.3.0
-  -- dependency of systemd-2.3.0
-  , network >= 3.1.1.1
-  -- choose versions that work with base >= 4.12
-  , hjsonpointer >= 1.5.0
-  , hjsonschema >= 1.10.0
-
--- ----------------------------------------------------------------
--- Flags for dependencies
-
-package cardano-config
-  flags: -systemd
-package cardano-node
-  flags: -systemd
-
--- -------------------------------------------------------------------------
--- Enable specific tests in this repo
-
-test-show-details: direct
+allow-older: *
+allow-newer: *
 
 package dbvar
-  tests: True
-  ghc-options: -fwrite-ide-info
-
-package cardano-wallet
-  tests: True
-  ghc-options: -fwrite-ide-info
+    ghc-options: -fwrite-ide-info
 
 package cardano-wallet-core
-  tests: True
-  ghc-options: -fwrite-ide-info
-
-package cardano-wallet-cli
-  tests: True
-  ghc-options: -fwrite-ide-info
-
-package cardano-wallet-launcher
-  tests: True
-  ghc-options: -fwrite-ide-info
-
-package cardano-wallet-text-class
-  tests: True
-  ghc-options: -fwrite-ide-info
-
-package cardano-numeric
-  tests: True
-  ghc-options: -fwrite-ide-info
+    ghc-options: -fwrite-ide-info
 
 package cardano-wallet-core-integration
-  tests: True
-  ghc-options: -fwrite-ide-info
+    ghc-options: -fwrite-ide-info
+
+package cardano-wallet-cli
+    ghc-options: -fwrite-ide-info
+
+package cardano-wallet-launcher
+    ghc-options: -fwrite-ide-info
+
+package cardano-numeric
+    ghc-options: -fwrite-ide-info
+
+package text-class
+    ghc-options: -fwrite-ide-info
 
 package cardano-wallet-test-utils
-  tests: True
-  ghc-options: -fwrite-ide-info
+    ghc-options: -fwrite-ide-info
+
+package cardano-wallet
+    ghc-options: -fwrite-ide-info
 
 package strict-non-empty-containers
-  tests: True
-  ghc-options: -fwrite-ide-info
-
--- Now disable all other tests with a global flag.
--- This is what they do in cardano-node/cabal.project.
-
-tests: False
-
--- -------------------------------------------------------------------------
+    ghc-options: -fwrite-ide-info

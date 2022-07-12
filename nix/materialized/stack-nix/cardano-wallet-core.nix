@@ -168,6 +168,7 @@
           "Cardano/Wallet/Api/Client"
           "Cardano/Wallet/Api/Link"
           "Cardano/Wallet/Api/Server"
+          "Cardano/Wallet/Api/Server/Free"
           "Cardano/Wallet/Api/Server/Tls"
           "Cardano/Wallet/Api/Types"
           "Cardano/Wallet/CoinSelection"
@@ -217,6 +218,7 @@
           "Cardano/Wallet/Primitive/Types"
           "Cardano/Wallet/Primitive/Types/Address"
           "Cardano/Wallet/Primitive/Types/Coin"
+          "Cardano/Wallet/Primitive/Types/Credential"
           "Cardano/Wallet/Primitive/Types/Hash"
           "Cardano/Wallet/Primitive/Types/Redeemer"
           "Cardano/Wallet/Primitive/Types/RewardAccount"
@@ -486,4 +488,6 @@
           };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./lib/core; }
+    } // rec {
+    src = (pkgs.lib).mkDefault ./lib/core;
+    }

@@ -127,6 +127,7 @@ extra-deps:
 - hspec-golden-0.2.0.0
 - transformers-except-0.1.1
 - Unique-0.4.7.6
+- wai-cors-0.2.7
 
 # Explicitly put back packages which were pruned by Stack.
 - binary-0.8.8.0
